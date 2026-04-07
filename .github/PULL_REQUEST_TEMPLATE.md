@@ -1,10 +1,10 @@
 ## Summary
 
-- 
+-
 
 ## What Changed
 
-- 
+-
 
 ## API Changes
 
@@ -12,12 +12,12 @@
 <!-- 예: POST /fitting, GET /outfit/:id -->
 
 | Method | Endpoint | 설명 |
-|--------|----------|------|
+| ------ | -------- | ---- |
 |        |          |      |
 
 ## Notes
 
-- 
+-
 
 ## Not Included
 
@@ -34,4 +34,3 @@
 
 - [ ] PR 목적이 한 가지로 설명된다
 - [ ] 불필요한 변경이 포함되지 않았다
-- [ ] env 변수 추가 시 `.env.example`에 반영했다
