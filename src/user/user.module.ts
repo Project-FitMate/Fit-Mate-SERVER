@@ -4,6 +4,7 @@ import { diskStorage } from 'multer';
 import { join } from 'path';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
+import { TasksService } from './tasks.service';
 
 @Module({
   imports: [
@@ -14,6 +15,6 @@ import { UserService } from './user.service';
     }),
   ],
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService, TasksService],
 })
 export class UserModule {}
