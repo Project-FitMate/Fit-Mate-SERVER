@@ -14,6 +14,7 @@ import { OutfitModule } from './outfit/outfit.module';
       validationSchema: Joi.object({
         NODE_ENV: Joi.string().valid('dev', 'prod').required(),
         OPENAI_API_KEY: Joi.string().required(),
+        AI_MODEL_URL: Joi.string().uri().required(),
       }),
     }),
     ScheduleModule.forRoot(),
