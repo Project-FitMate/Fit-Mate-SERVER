@@ -5,6 +5,7 @@ import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
+import { OutfitModule } from './outfit/outfit.module';
 
 @Module({
   imports: [
@@ -13,10 +14,12 @@ import { UserModule } from './user/user.module';
       validationSchema: Joi.object({
         NODE_ENV: Joi.string().valid('dev', 'prod').required(),
         OPENAI_API_KEY: Joi.string().required(),
+        AI_MODEL_URL: Joi.string().uri().required(),
       }),
     }),
     ScheduleModule.forRoot(),
     UserModule,
+    OutfitModule,
   ],
   controllers: [AppController],
   providers: [AppService],
