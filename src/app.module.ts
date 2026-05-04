@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { OutfitModule } from './outfit/outfit.module';
+import { FittingModule } from './fitting/fitting.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { OutfitModule } from './outfit/outfit.module';
     ScheduleModule.forRoot(),
     UserModule,
     OutfitModule,
+    FittingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
