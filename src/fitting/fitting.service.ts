@@ -1,19 +1,42 @@
 import { Injectable } from '@nestjs/common';
-import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { ConfigService } from '@nestjs/config';
+import { readFile, rename } from 'fs/promises';
+import { extname, join } from 'path';
 import { CreateFittingDto } from './dto/create-fitting.dto';
+import { FittingResponseDto } from './dto/fitting-response.dto';
 
 @Injectable()
 export class FittingService {
-  async createFitting(dto: CreateFittingDto): Promise<unknown> {
+  constructor(private readonly configService: ConfigService) {}
+
+  async createFitting(dto: CreateFittingDto): Promise<FittingResponseDto> {
     const userImageBase64 = await this.encodeUserImage(dto.userImageName);
     const outfitImageBase64 = await this.encodeOutfitImage(dto.outfitImageUrl);
 
-    // TODO: temp → public 이동 (디바이스 ID 기반, 가드 구현 후 추가)
+    // TODO: 가드에서 디바이스 ID 주입 후 아래 주석 해제
+    // await this.moveToUserDir(dto.userImageName, deviceId);
 
-    // TODO: AI 서버로 _userImageBase64, _outfitImageBase64 전송 (인터페이스 협의 후 구현)
+    return await this.requestFitting(userImageBase64, outfitImageBase64);
+  }
 
-    return {};
+  private async requestFitting(
+    userImageBase64: string,
+    outfitImageBase64: string,
+  ): Promise<FittingResponseDto> {
+    const url = this.configService.get<string>('AI_MODEL_URL');
+    const response = await fetch(`${url}/fitting`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userImage: userImageBase64, outfitImage: outfitImageBase64 }),
+    });
+    return response.json() as Promise<FittingResponseDto>;
+  }
+
+  private async moveToUserDir(userImageName: string, deviceId: string): Promise<void> {
+    const ext = extname(userImageName);
+    const srcPath = join(process.cwd(), 'public', 'temp', userImageName);
+    const destPath = join(process.cwd(), 'public', 'user', `${deviceId}${ext}`);
+    await rename(srcPath, destPath);
   }
 
   private async encodeUserImage(userImageName: string): Promise<string> {
