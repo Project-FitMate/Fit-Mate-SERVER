@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { readFile, rename } from 'fs/promises';
+import { mkdir, readFile, rename } from 'fs/promises';
 import { extname, join } from 'path';
 import { CreateFittingDto } from './dto/create-fitting.dto';
 import { FittingResponseDto } from './dto/fitting-response.dto';
@@ -9,12 +9,14 @@ import { FittingResponseDto } from './dto/fitting-response.dto';
 export class FittingService {
   constructor(private readonly configService: ConfigService) {}
 
-  async createFitting(dto: CreateFittingDto): Promise<FittingResponseDto> {
+  async createFitting(
+    dto: CreateFittingDto,
+    deviceId: string,
+  ): Promise<FittingResponseDto> {
     const userImageBase64 = await this.encodeUserImage(dto.userImageName);
     const outfitImageBase64 = await this.encodeOutfitImage(dto.outfitImageUrl);
 
-    // TODO: 가드에서 디바이스 ID 주입 후 아래 주석 해제
-    // await this.moveToUserDir(dto.userImageName, deviceId);
+    await this.moveToUserDir(dto.userImageName, deviceId);
 
     return await this.requestFitting(userImageBase64, outfitImageBase64);
   }
@@ -27,15 +29,23 @@ export class FittingService {
     const response = await fetch(`${url}/fitting`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userImage: userImageBase64, outfitImage: outfitImageBase64 }),
+      body: JSON.stringify({
+        userImage: userImageBase64,
+        outfitImage: outfitImageBase64,
+      }),
     });
     return response.json() as Promise<FittingResponseDto>;
   }
 
-  private async moveToUserDir(userImageName: string, deviceId: string): Promise<void> {
+  private async moveToUserDir(
+    userImageName: string,
+    deviceId: string,
+  ): Promise<void> {
     const ext = extname(userImageName);
     const srcPath = join(process.cwd(), 'public', 'temp', userImageName);
-    const destPath = join(process.cwd(), 'public', 'user', `${deviceId}${ext}`);
+    const userDir = join(process.cwd(), 'public', 'user');
+    const destPath = join(userDir, `${deviceId}${ext}`);
+    await mkdir(userDir, { recursive: true });
     await rename(srcPath, destPath);
   }
 
