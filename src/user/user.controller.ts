@@ -16,7 +16,10 @@ export class UserController {
 
   @Post('image')
   @UseInterceptors(FileInterceptor('image'))
-  @SerializeOptions({ type: UserImageResponseDto })
+  @SerializeOptions({
+    type: UserImageResponseDto,
+    excludeExtraneousValues: true,
+  })
   postUserImage(
     @UploadedFile(new UserImagePipe())
     image: Express.Multer.File,

@@ -8,7 +8,10 @@ export class OutfitController {
   constructor(private readonly outfitService: OutfitService) {}
 
   @Get()
-  @SerializeOptions({ type: OutfitItemResponseDto })
+  @SerializeOptions({
+    type: OutfitItemResponseDto,
+    excludeExtraneousValues: true,
+  })
   getOutfits(@Query() query: GetOutfitDto) {
     return this.outfitService.getOutfits(query);
   }
