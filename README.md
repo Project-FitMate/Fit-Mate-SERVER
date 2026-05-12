@@ -26,12 +26,14 @@ pnpm start:prod
 
 ```env
 NODE_ENV=dev
+NODE_PORT=3000
 AI_MODEL_URL=http://localhost:8000
 ```
 
 | 이름           | 설명              |
 | -------------- | ----------------- |
 | `NODE_ENV`     | `dev` 또는 `prod` |
+| `NODE_PORT`    | 서버 실행 포트    |
 | `AI_MODEL_URL` | AI 모델 서버 주소 |
 
 ## 공통 정책
