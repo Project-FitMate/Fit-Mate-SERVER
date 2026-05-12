@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { mkdir, readdir, unlink } from 'fs/promises';
+import { lstat, mkdir, readdir, unlink } from 'fs/promises';
 import { join, parse } from 'path';
 
 @Injectable()
@@ -36,6 +36,28 @@ export class TasksService {
       }
     });
 
-    await Promise.all(deletedFiles.map((file) => unlink(join(tempDir, file))));
+    await Promise.all(
+      deletedFiles.map((file) => this.unlinkIfFile(join(tempDir, file))),
+    );
+  }
+
+  private async unlinkIfFile(filePath: string): Promise<void> {
+    let stat;
+
+    try {
+      stat = await lstat(filePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return;
+      }
+
+      throw error;
+    }
+
+    if (!stat.isFile()) {
+      return;
+    }
+
+    await unlink(filePath);
   }
 }

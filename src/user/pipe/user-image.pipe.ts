@@ -19,6 +19,11 @@ export class UserImagePipe implements PipeTransform<
     'image/png',
     'image/webp',
   ];
+  private readonly MIME_TYPE_EXTENSIONS = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  } as const;
 
   async transform(file: Express.Multer.File, _metadata: ArgumentMetadata) {
     this.assertFileExists(file);
@@ -51,7 +56,7 @@ export class UserImagePipe implements PipeTransform<
   }
 
   private async rename(file: Express.Multer.File) {
-    const extension = file.originalname.split('.').pop();
+    const extension = this.MIME_TYPE_EXTENSIONS[file.mimetype];
     const filename = `${uuidv4()}_${Date.now()}.${extension}`;
     const newPath = join(file.destination, filename);
 
