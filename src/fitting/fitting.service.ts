@@ -1,16 +1,32 @@
+import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { lookup } from 'dns/promises';
 import { mkdir, readFile, rename } from 'fs/promises';
+import { isIP } from 'net';
 import { basename, extname, isAbsolute, relative, resolve } from 'path';
+import { firstValueFrom } from 'rxjs';
 import { CreateFittingDto } from './dto/create-fitting.dto';
 import { FittingResponseDto } from './dto/fitting-response.dto';
 
 const USER_IMAGE_NAME_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_[0-9]{13}\.(jpe?g|png|webp)$/i;
+const AI_MODEL_REQUEST_TIMEOUT_MS = 10000;
+const OUTFIT_IMAGE_REQUEST_TIMEOUT_MS = 10000;
+const MAX_OUTFIT_IMAGE_SIZE_IN_BYTES = 10 * 1000 * 1000;
+const ALLOWED_OUTFIT_IMAGE_PROTOCOLS = ['http:', 'https:'];
+const ALLOWED_OUTFIT_IMAGE_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
 
 @Injectable()
 export class FittingService {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async createFitting(
     dto: CreateFittingDto,
@@ -29,15 +45,21 @@ export class FittingService {
     outfitImageBase64: string,
   ): Promise<FittingResponseDto> {
     const url = this.configService.get<string>('AI_MODEL_URL');
-    const response = await fetch(`${url}/fitting`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userImage: userImageBase64,
-        outfitImage: outfitImageBase64,
-      }),
-    });
-    return response.json() as Promise<FittingResponseDto>;
+    const fittingUrl = this.createUrl(url, 'fitting');
+    const { data } = await firstValueFrom(
+      this.httpService.post<FittingResponseDto>(
+        fittingUrl,
+        {
+          userImage: userImageBase64,
+          outfitImage: outfitImageBase64,
+        },
+        {
+          timeout: AI_MODEL_REQUEST_TIMEOUT_MS,
+        },
+      ),
+    );
+
+    return data;
   }
 
   private async moveToUserDir(
@@ -61,9 +83,56 @@ export class FittingService {
   }
 
   private async encodeOutfitImage(outfitImageUrl: string): Promise<string> {
-    const response = await fetch(outfitImageUrl);
-    const buffer = await response.arrayBuffer();
-    return Buffer.from(buffer).toString('base64');
+    await this.assertOutfitImageUrl(outfitImageUrl);
+
+    const { data, headers } = await firstValueFrom(
+      this.httpService.get<ArrayBuffer>(outfitImageUrl, {
+        responseType: 'arraybuffer',
+        timeout: OUTFIT_IMAGE_REQUEST_TIMEOUT_MS,
+        maxContentLength: MAX_OUTFIT_IMAGE_SIZE_IN_BYTES,
+        maxBodyLength: MAX_OUTFIT_IMAGE_SIZE_IN_BYTES,
+      }),
+    );
+
+    this.assertOutfitImageResponse(headers['content-type']);
+
+    return Buffer.from(data).toString('base64');
+  }
+
+  private async assertOutfitImageUrl(outfitImageUrl: string): Promise<void> {
+    let url: URL;
+
+    try {
+      url = new URL(outfitImageUrl);
+    } catch {
+      throw new BadRequestException('옷 이미지 URL 형식이 올바르지 않습니다.');
+    }
+
+    if (!ALLOWED_OUTFIT_IMAGE_PROTOCOLS.includes(url.protocol)) {
+      throw new BadRequestException(
+        'http 또는 https 이미지 URL만 사용할 수 있습니다.',
+      );
+    }
+
+    const addresses = await lookup(url.hostname, { all: true });
+    if (addresses.some(({ address }) => this.isPrivateAddress(address))) {
+      throw new BadRequestException('허용되지 않은 옷 이미지 URL입니다.');
+    }
+  }
+
+  private assertOutfitImageResponse(contentType: unknown): void {
+    const normalizedContentType = Array.isArray(contentType)
+      ? contentType[0]
+      : contentType;
+
+    if (
+      typeof normalizedContentType !== 'string' ||
+      !ALLOWED_OUTFIT_IMAGE_CONTENT_TYPES.some((allowedType) =>
+        normalizedContentType.startsWith(allowedType),
+      )
+    ) {
+      throw new BadRequestException('지원하지 않는 옷 이미지 형식입니다.');
+    }
   }
 
   private createTempImagePath(userImageName: string): string {
@@ -91,5 +160,32 @@ export class FittingService {
     ) {
       throw new BadRequestException('파일 경로가 올바르지 않습니다.');
     }
+  }
+
+  private createUrl(baseUrl: string, path: string): string {
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    return new URL(path, normalizedBaseUrl).toString();
+  }
+
+  private isPrivateAddress(address: string): boolean {
+    if (isIP(address) === 4) {
+      const [first, second] = address.split('.').map(Number);
+      return (
+        first === 10 ||
+        first === 127 ||
+        (first === 172 && second >= 16 && second <= 31) ||
+        (first === 192 && second === 168) ||
+        (first === 169 && second === 254)
+      );
+    }
+
+    const normalizedAddress = address.toLowerCase();
+    return (
+      normalizedAddress === '::1' ||
+      normalizedAddress === '::' ||
+      normalizedAddress.startsWith('fc') ||
+      normalizedAddress.startsWith('fd') ||
+      normalizedAddress.startsWith('fe80:')
+    );
   }
 }
