@@ -39,10 +39,14 @@ export class FittingService {
   ): Promise<FittingResponseDto> {
     const userImageBase64 = await this.encodeUserImage(dto.userImageName);
     const outfitImageBase64 = await this.encodeOutfitImage(dto.outfitImageUrl);
+    const fitting = await this.requestFitting(
+      userImageBase64,
+      outfitImageBase64,
+    );
 
     await this.moveToUserDir(dto.userImageName, deviceId);
 
-    return await this.requestFitting(userImageBase64, outfitImageBase64);
+    return fitting;
   }
 
   private async requestFitting(

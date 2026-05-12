@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Injectable } from '@nestjs/common';
+import { BadGatewayException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { GetOutfitDto } from './dto/get-outfit.dto';
@@ -17,13 +17,19 @@ export class OutfitService {
   async getOutfits(dto: GetOutfitDto): Promise<OutfitItemDto[]> {
     const url = this.configService.get<string>('AI_MODEL_URL');
     const outfitUrl = this.createAiModelUrl(url, 'outfit');
-    const { data } = await firstValueFrom(
-      this.httpService.get<OutfitItemDto[]>(outfitUrl, {
-        params: dto,
-        timeout: AI_MODEL_REQUEST_TIMEOUT_MS,
-      }),
-    );
-    return data;
+
+    try {
+      const { data } = await firstValueFrom(
+        this.httpService.get<OutfitItemDto[]>(outfitUrl, {
+          params: dto,
+          timeout: AI_MODEL_REQUEST_TIMEOUT_MS,
+        }),
+      );
+
+      return data;
+    } catch {
+      throw new BadGatewayException('AI 옷 추천 서버 요청에 실패했습니다.');
+    }
   }
 
   private createAiModelUrl(baseUrl: string, path: string): string {
