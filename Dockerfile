@@ -20,6 +20,6 @@ RUN corepack enable && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 8080
+EXPOSE 3000
 
 CMD ["node", "dist/main"]

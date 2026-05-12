@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsString, Max, Min } from 'class-validator';
 import { OutfitPart } from '../const/outfit-part.const';
 
 export class GetOutfitDto {
@@ -15,4 +15,8 @@ export class GetOutfitDto {
   @IsInt()
   @Max(500000)
   maxPrice: number;
+
+  @IsString()
+  @IsNotEmpty()
+  userImageName: string;
 }

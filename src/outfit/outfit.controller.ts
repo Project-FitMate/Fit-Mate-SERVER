@@ -1,4 +1,4 @@
-import { Controller, Get, Query, SerializeOptions } from '@nestjs/common';
+import { Body, Controller, Post, SerializeOptions } from '@nestjs/common';
 import { OutfitItemResponseDto } from './dto/outfit-item-response.dto';
 import { GetOutfitDto } from './dto/get-outfit.dto';
 import { OutfitService } from './outfit.service';
@@ -7,9 +7,9 @@ import { OutfitService } from './outfit.service';
 export class OutfitController {
   constructor(private readonly outfitService: OutfitService) {}
 
-  @Get()
+  @Post()
   @SerializeOptions({ type: OutfitItemResponseDto })
-  getOutfits(@Query() query: GetOutfitDto) {
-    return this.outfitService.getOutfits(query);
+  getOutfits(@Body() body: GetOutfitDto) {
+    return this.outfitService.getOutfits(body);
   }
 }
