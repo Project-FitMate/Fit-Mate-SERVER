@@ -1,6 +1,11 @@
 import { HttpService } from '@nestjs/axios';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { LookupAddress } from 'dns';
 import { lookup } from 'dns/promises';
 import { mkdir, readFile, rename } from 'fs/promises';
 import { isIP } from 'net';
@@ -46,20 +51,25 @@ export class FittingService {
   ): Promise<FittingResponseDto> {
     const url = this.configService.get<string>('AI_MODEL_URL');
     const fittingUrl = this.createUrl(url, 'fitting');
-    const { data } = await firstValueFrom(
-      this.httpService.post<FittingResponseDto>(
-        fittingUrl,
-        {
-          userImage: userImageBase64,
-          outfitImage: outfitImageBase64,
-        },
-        {
-          timeout: AI_MODEL_REQUEST_TIMEOUT_MS,
-        },
-      ),
-    );
 
-    return data;
+    try {
+      const { data } = await firstValueFrom(
+        this.httpService.post<FittingResponseDto>(
+          fittingUrl,
+          {
+            userImage: userImageBase64,
+            outfitImage: outfitImageBase64,
+          },
+          {
+            timeout: AI_MODEL_REQUEST_TIMEOUT_MS,
+          },
+        ),
+      );
+
+      return data;
+    } catch {
+      throw new BadGatewayException('AI 피팅 서버 요청에 실패했습니다.');
+    }
   }
 
   private async moveToUserDir(
@@ -85,18 +95,26 @@ export class FittingService {
   private async encodeOutfitImage(outfitImageUrl: string): Promise<string> {
     await this.assertOutfitImageUrl(outfitImageUrl);
 
-    const { data, headers } = await firstValueFrom(
-      this.httpService.get<ArrayBuffer>(outfitImageUrl, {
-        responseType: 'arraybuffer',
-        timeout: OUTFIT_IMAGE_REQUEST_TIMEOUT_MS,
-        maxContentLength: MAX_OUTFIT_IMAGE_SIZE_IN_BYTES,
-        maxBodyLength: MAX_OUTFIT_IMAGE_SIZE_IN_BYTES,
-      }),
-    );
+    const { data, headers } = await this.downloadOutfitImage(outfitImageUrl);
 
     this.assertOutfitImageResponse(headers['content-type']);
 
     return Buffer.from(data).toString('base64');
+  }
+
+  private async downloadOutfitImage(outfitImageUrl: string) {
+    try {
+      return await firstValueFrom(
+        this.httpService.get<ArrayBuffer>(outfitImageUrl, {
+          responseType: 'arraybuffer',
+          timeout: OUTFIT_IMAGE_REQUEST_TIMEOUT_MS,
+          maxContentLength: MAX_OUTFIT_IMAGE_SIZE_IN_BYTES,
+          maxBodyLength: MAX_OUTFIT_IMAGE_SIZE_IN_BYTES,
+        }),
+      );
+    } catch {
+      throw new BadRequestException('옷 이미지 다운로드에 실패했습니다.');
+    }
   }
 
   private async assertOutfitImageUrl(outfitImageUrl: string): Promise<void> {
@@ -114,7 +132,13 @@ export class FittingService {
       );
     }
 
-    const addresses = await lookup(url.hostname, { all: true });
+    let addresses: LookupAddress[];
+
+    try {
+      addresses = await lookup(url.hostname, { all: true });
+    } catch {
+      throw new BadRequestException('옷 이미지 URL을 확인할 수 없습니다.');
+    }
     if (addresses.some(({ address }) => this.isPrivateAddress(address))) {
       throw new BadRequestException('허용되지 않은 옷 이미지 URL입니다.');
     }
