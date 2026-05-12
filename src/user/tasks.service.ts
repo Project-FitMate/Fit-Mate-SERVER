@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { readdir, unlink } from 'fs/promises';
+import { mkdir, readdir, unlink } from 'fs/promises';
 import { join, parse } from 'path';
 
 @Injectable()
 export class TasksService {
   @Cron('0 0 * * * *') // 매 시간 정각
   async eraseOrphanTempFiles() {
-    const tempFiles = await readdir(join(process.cwd(), 'public', 'temp'));
+    const tempDir = join(process.cwd(), 'public', 'temp');
+    await mkdir(tempDir, { recursive: true });
+
+    const tempFiles = await readdir(tempDir);
 
     const deletedFiles = tempFiles.filter((file) => {
       const filename = parse(file).name;
@@ -23,16 +26,16 @@ export class TasksService {
         const fileTimestamp = Number(split[split.length - 1]);
         const aDayInMs = 24 * 60 * 60 * 1000;
 
+        if (!Number.isFinite(fileTimestamp)) {
+          return true;
+        }
+
         return now - fileTimestamp > aDayInMs;
       } catch (e) {
         return true;
       }
     });
 
-    await Promise.all(
-      deletedFiles.map((file) =>
-        unlink(join(process.cwd(), 'public', 'temp', file)),
-      ),
-    );
+    await Promise.all(deletedFiles.map((file) => unlink(join(tempDir, file))));
   }
 }

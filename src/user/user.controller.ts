@@ -1,10 +1,12 @@
 import {
   Controller,
   Post,
+  SerializeOptions,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UserImageResponseDto } from './dto/user-image-response.dto';
 import { UserImagePipe } from './pipe/user-image.pipe';
 import { UserService } from './user.service';
 
@@ -14,10 +16,11 @@ export class UserController {
 
   @Post('image')
   @UseInterceptors(FileInterceptor('image'))
+  @SerializeOptions({ type: UserImageResponseDto })
   postUserImage(
     @UploadedFile(new UserImagePipe())
     image: Express.Multer.File,
   ) {
-    return this.userService.saveUserImage(image);
+    return this.userService.saveUserImage({ image });
   }
 }
