@@ -27,3 +27,7 @@ steps:
 
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/fitmate-repo/fitmate-server'
+
+options:
+
+  logging: CLOUD_LOGGING_ONLY
