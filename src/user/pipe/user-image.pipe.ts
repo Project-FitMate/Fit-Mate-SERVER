@@ -9,13 +9,18 @@ import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
-export class UserImagePipe
-  implements PipeTransform<Express.Multer.File, Promise<Express.Multer.File>>
-{
+export class UserImagePipe implements PipeTransform<
+  Express.Multer.File,
+  Promise<Express.Multer.File>
+> {
   private readonly MAX_SIZE_MB = 10;
-  private readonly ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  private readonly ALLOWED_MIMETYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ];
 
-  async transform(file: Express.Multer.File, metadata: ArgumentMetadata) {
+  async transform(file: Express.Multer.File, _metadata: ArgumentMetadata) {
     this.assertFileExists(file);
     this.assertFileSize(file);
     this.assertMimeType(file);
