@@ -48,6 +48,8 @@ lerna-debug.log*
 .tmp
 /public/temp/*
 !/public/temp/.gitkeep
+/public/user/*
+!/public/user/.gitkeep
 
 # Runtime data
 pids
