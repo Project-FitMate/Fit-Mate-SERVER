@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import * as Joi from 'joi';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { OutfitModule } from './outfit/outfit.module';
 import { FittingModule } from './fitting/fitting.module';
@@ -22,7 +20,5 @@ import { FittingModule } from './fitting/fitting.module';
     OutfitModule,
     FittingModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
