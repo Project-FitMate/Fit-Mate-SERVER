@@ -25,7 +25,7 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--update-env-vars'
-      - 'NODE_ENV=prod'
+      - 'NODE_ENV=prod,NODE_PORT=8080,AI_MODEL_URL=http://localhost:8000'
 
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/fitmate-repo/fitmate-server'
