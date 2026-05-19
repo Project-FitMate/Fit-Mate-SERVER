@@ -30,6 +30,6 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.getOrThrow<number>('NODE_PORT');
 
-  await app.listen(port);
+  await app.listen(port ?? 8080);
 }
 bootstrap();
