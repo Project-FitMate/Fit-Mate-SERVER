@@ -24,6 +24,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NODE_ENV=prod'
 
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/fitmate-repo/fitmate-server'
