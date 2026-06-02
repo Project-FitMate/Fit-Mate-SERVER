@@ -16,7 +16,7 @@ import { FittingResponseDto } from './dto/fitting-response.dto';
 
 const USER_IMAGE_NAME_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_[0-9]{13}\.(jpe?g|png|webp)$/i;
-const AI_MODEL_REQUEST_TIMEOUT_MS = 10000;
+const AI_MODEL_REQUEST_TIMEOUT_MS = 70000;
 const OUTFIT_IMAGE_REQUEST_TIMEOUT_MS = 10000;
 const MAX_OUTFIT_IMAGE_SIZE_IN_BYTES = 10 * 1000 * 1000;
 const ALLOWED_OUTFIT_IMAGE_PROTOCOLS = ['http:', 'https:'];
@@ -38,10 +38,14 @@ export class FittingService {
     deviceId: string,
   ): Promise<FittingResponseDto> {
     const userImageBase64 = await this.encodeUserImage(dto.userImageName);
-    const outfitImageBase64 = await this.encodeOutfitImage(dto.outfitImageUrl);
+    const outfitImagesBase64 = await Promise.all(
+      dto.outfitImageUrls.map((outfitImageUrl) =>
+        this.encodeOutfitImage(outfitImageUrl),
+      ),
+    );
     const fitting = await this.requestFitting(
       userImageBase64,
-      outfitImageBase64,
+      outfitImagesBase64,
     );
 
     await this.moveToUserDir(dto.userImageName, deviceId);
@@ -51,7 +55,7 @@ export class FittingService {
 
   private async requestFitting(
     userImageBase64: string,
-    outfitImageBase64: string,
+    outfitImagesBase64: string[],
   ): Promise<FittingResponseDto> {
     const url = this.configService.get<string>('AI_MODEL_URL');
     const fittingUrl = this.createUrl(url, 'fitting');
@@ -62,7 +66,7 @@ export class FittingService {
           fittingUrl,
           {
             userImage: userImageBase64,
-            outfitImage: outfitImageBase64,
+            outfitImages: outfitImagesBase64,
           },
           {
             timeout: AI_MODEL_REQUEST_TIMEOUT_MS,

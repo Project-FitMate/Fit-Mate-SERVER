@@ -1,4 +1,6 @@
 import {
+  ArrayNotEmpty,
+  IsArray,
   IsNotEmpty,
   IsString,
   IsUrl,
@@ -21,6 +23,8 @@ export class CreateFittingDto {
   })
   userImageName: string;
 
-  @IsUrl()
-  outfitImageUrl: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUrl({}, { each: true })
+  outfitImageUrls: string[];
 }
