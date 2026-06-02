@@ -2,9 +2,11 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
+
 COPY package.json pnpm-lock.yaml ./
 
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY . .
 
@@ -14,12 +16,14 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
+RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
+
 COPY package.json pnpm-lock.yaml ./
 
-RUN corepack enable && pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 8080
+EXPOSE 3000
 
 CMD ["node", "dist/main"]
