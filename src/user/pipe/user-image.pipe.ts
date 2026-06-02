@@ -9,13 +9,23 @@ import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
-export class UserImagePipe
-  implements PipeTransform<Express.Multer.File, Promise<Express.Multer.File>>
-{
+export class UserImagePipe implements PipeTransform<
+  Express.Multer.File,
+  Promise<Express.Multer.File>
+> {
   private readonly MAX_SIZE_MB = 10;
-  private readonly ALLOWED_MIMETYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  private readonly ALLOWED_MIMETYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ];
+  private readonly MIME_TYPE_EXTENSIONS = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  } as const;
 
-  async transform(file: Express.Multer.File, metadata: ArgumentMetadata) {
+  async transform(file: Express.Multer.File, _metadata: ArgumentMetadata) {
     this.assertFileExists(file);
     this.assertFileSize(file);
     this.assertMimeType(file);
@@ -46,7 +56,7 @@ export class UserImagePipe
   }
 
   private async rename(file: Express.Multer.File) {
-    const extension = file.originalname.split('.').pop();
+    const extension = this.MIME_TYPE_EXTENSIONS[file.mimetype];
     const filename = `${uuidv4()}_${Date.now()}.${extension}`;
     const newPath = join(file.destination, filename);
 

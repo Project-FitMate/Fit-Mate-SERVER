@@ -1,6 +1,11 @@
-import { Expose } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
+import { OutfitPart } from '../const/outfit-part.const';
 
+@Exclude()
 export class OutfitItemResponseDto {
+  @Expose()
+  part: OutfitPart;
+
   @Expose()
   image: string;
 

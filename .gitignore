@@ -2,6 +2,7 @@
 /dist
 /node_modules
 /build
+*.tsbuildinfo
 
 # Logs
 logs
@@ -47,6 +48,8 @@ lerna-debug.log*
 .tmp
 /public/temp/*
 !/public/temp/.gitkeep
+/public/user/*
+!/public/user/.gitkeep
 
 # Runtime data
 pids
@@ -56,4 +59,3 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-

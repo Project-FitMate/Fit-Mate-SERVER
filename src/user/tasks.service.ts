@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { readdir, unlink } from 'fs/promises';
+import { lstat, mkdir, readdir, unlink } from 'fs/promises';
 import { join, parse } from 'path';
 
 @Injectable()
 export class TasksService {
   @Cron('0 0 * * * *') // 매 시간 정각
   async eraseOrphanTempFiles() {
-    const tempFiles = await readdir(join(process.cwd(), 'public', 'temp'));
+    const tempDir = join(process.cwd(), 'public', 'temp');
+    await mkdir(tempDir, { recursive: true });
+
+    const tempFiles = await readdir(tempDir);
 
     const deletedFiles = tempFiles.filter((file) => {
       const filename = parse(file).name;
@@ -23,6 +26,10 @@ export class TasksService {
         const fileTimestamp = Number(split[split.length - 1]);
         const aDayInMs = 24 * 60 * 60 * 1000;
 
+        if (!Number.isFinite(fileTimestamp)) {
+          return true;
+        }
+
         return now - fileTimestamp > aDayInMs;
       } catch (e) {
         return true;
@@ -30,9 +37,27 @@ export class TasksService {
     });
 
     await Promise.all(
-      deletedFiles.map((file) =>
-        unlink(join(process.cwd(), 'public', 'temp', file)),
-      ),
+      deletedFiles.map((file) => this.unlinkIfFile(join(tempDir, file))),
     );
+  }
+
+  private async unlinkIfFile(filePath: string): Promise<void> {
+    let stat;
+
+    try {
+      stat = await lstat(filePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return;
+      }
+
+      throw error;
+    }
+
+    if (!stat.isFile()) {
+      return;
+    }
+
+    await unlink(filePath);
   }
 }
