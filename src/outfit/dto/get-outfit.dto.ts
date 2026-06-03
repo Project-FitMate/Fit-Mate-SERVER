@@ -4,7 +4,10 @@ import {
   IsArray,
   IsEnum,
   IsInt,
+  IsOptional,
+  IsString,
   Matches,
+  MaxLength,
   Min,
   Validate,
   ValidationArguments,
@@ -61,4 +64,10 @@ export class GetOutfitDto {
     message: 'userImageName 형식이 올바르지 않습니다.',
   })
   userImageName: string;
+
+  // Optional re-search keyword (product name/style) forwarded to the AI model.
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  keyword?: string;
 }
