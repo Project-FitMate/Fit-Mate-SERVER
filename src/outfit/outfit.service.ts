@@ -36,6 +36,7 @@ export class OutfitService {
             minPrice: dto.minPrice,
             maxPrice: dto.maxPrice,
             userImage: userImageBase64,
+            keyword: dto.keyword,
           },
           {
             timeout: AI_MODEL_REQUEST_TIMEOUT_MS,

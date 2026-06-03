@@ -7,7 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { LookupAddress } from 'dns';
 import { lookup } from 'dns/promises';
-import { mkdir, readFile, rename } from 'fs/promises';
+import { copyFile, mkdir, readFile } from 'fs/promises';
 import { isIP } from 'net';
 import { basename, extname, isAbsolute, relative, resolve } from 'path';
 import { firstValueFrom } from 'rxjs';
@@ -48,7 +48,7 @@ export class FittingService {
       outfitImagesBase64,
     );
 
-    await this.moveToUserDir(dto.userImageName, deviceId);
+    await this.copyToUserDir(dto.userImageName, deviceId);
 
     return fitting;
   }
@@ -80,7 +80,10 @@ export class FittingService {
     }
   }
 
-  private async moveToUserDir(
+  // Copy (not move) the uploaded image into the user dir so the temp original
+  // stays valid for repeat fittings/recommendations with the same
+  // userImageName. The hourly TasksService cron prunes temp files after a day.
+  private async copyToUserDir(
     userImageName: string,
     deviceId: string,
   ): Promise<void> {
@@ -91,7 +94,7 @@ export class FittingService {
 
     this.assertPathInsideDir(userDir, destPath);
     await mkdir(userDir, { recursive: true });
-    await rename(srcPath, destPath);
+    await copyFile(srcPath, destPath);
   }
 
   private async encodeUserImage(userImageName: string): Promise<string> {
